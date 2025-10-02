@@ -1,0 +1,169 @@
+name: Build All Platforms
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'gradle'
+        
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Build Android Debug APK
+      run: ./gradlew :androidApp:assembleDebug --stacktrace
+      
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-debug-apk
+        path: androidApp/build/outputs/apk/debug/*.apk
+        retention-days: 30
+        
+    - name: Build Android Release APK
+      run: ./gradlew :androidApp:assembleRelease --stacktrace
+      continue-on-error: true
+      
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: android-release-apk
+        path: androidApp/build/outputs/apk/release/*.apk
+        retention-days: 30
+
+  build-desktop:
+    name: Build Desktop Apps
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact-name: linux-desktop
+            build-task: packageDeb
+            artifact-path: desktopApp/build/compose/binaries/main/deb/*.deb
+          - os: macos-latest
+            artifact-name: macos-desktop
+            build-task: packageDmg
+            artifact-path: desktopApp/build/compose/binaries/main/dmg/*.dmg
+          - os: windows-latest
+            artifact-name: windows-desktop
+            build-task: packageMsi
+            artifact-path: desktopApp/build/compose/binaries/main/msi/*.msi
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'gradle'
+        
+    - name: Grant execute permission for gradlew (Unix)
+      if: runner.os != 'Windows'
+      run: chmod +x gradlew
+      
+    - name: Build Desktop App
+      run: ./gradlew :desktopApp:${{ matrix.build-task }} --stacktrace
+      continue-on-error: true
+      
+    - name: Upload Desktop Package
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: ${{ matrix.artifact-path }}
+        retention-days: 30
+
+  build-ios-framework:
+    name: Build iOS Framework
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'gradle'
+        
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Build iOS Framework (Simulator ARM64)
+      run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+      
+    - name: Build iOS Framework (iOS ARM64)
+      run: ./gradlew :shared:linkDebugFrameworkIosArm64 --stacktrace
+      
+    - name: Build iOS Framework (iOS X64)
+      run: ./gradlew :shared:linkDebugFrameworkIosX64 --stacktrace
+      
+    - name: Create XCFramework
+      run: |
+        mkdir -p build/xcframework
+        xcodebuild -create-xcframework \
+          -framework shared/build/bin/iosSimulatorArm64/debugFramework/shared.framework \
+          -framework shared/build/bin/iosArm64/debugFramework/shared.framework \
+          -framework shared/build/bin/iosX64/debugFramework/shared.framework \
+          -output build/xcframework/shared.xcframework
+      continue-on-error: true
+    
+    - name: Upload iOS Frameworks
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-frameworks
+        path: |
+          shared/build/bin/iosSimulatorArm64/debugFramework/
+          shared/build/bin/iosArm64/debugFramework/
+          shared/build/bin/iosX64/debugFramework/
+        retention-days: 30
+        
+    - name: Upload XCFramework
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: ios-xcframework
+        path: build/xcframework/shared.xcframework
+        retention-days: 30
+
+  build-summary:
+    name: Build Summary
+    needs: [build-android, build-desktop, build-ios-framework]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Check build results
+      run: |
+        echo "🎉 Build Summary for KMP Pomodoro Timer"
+        echo "========================================"
+        echo "Android Build: ${{ needs.build-android.result }}"
+        echo "Desktop Build: ${{ needs.build-desktop.result }}"
+        echo "iOS Framework: ${{ needs.build-ios-framework.result }}"
+        echo ""
+        echo "📦 Download artifacts from the Actions tab above!"
