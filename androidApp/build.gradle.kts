@@ -34,5 +34,5 @@ dependencies {
     implementation(projects.shared)
     implementation(libs.androidx.activity.compose)
     implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
+    implementation("androidx.compose.material3:material3:1.2.1")
 }

@@ -9,6 +9,11 @@ plugins {
 group = "com.avsdeveloper.pomodoro"
 version = "1.0.0"
 
+// Java 17 compatibility
+kotlin {
+    jvmToolchain(17)
+}
+
 dependencies {
     implementation(projects.shared)
     implementation(compose.desktop.currentOs)

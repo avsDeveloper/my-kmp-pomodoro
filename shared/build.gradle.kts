@@ -1,16 +1,21 @@
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
-    id("com.android.library")
-    id("org.jetbrains.compose")
-    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.compose)
+    alias(libs.plugins.compose.compiler)
 }
 
 kotlin {
     androidTarget()
     
     jvm("desktop")
-    
+
+    // Java 17 toolchain for all JVM targets
+    jvmToolchain(17)
+
+    // Temporarily comment out iOS targets to resolve build issues
+    /*
     listOf(
         iosX64(),
         iosArm64(),
@@ -21,6 +26,7 @@ kotlin {
             isStatic = true
         }
     }
+    */
 
     sourceSets {
         val commonMain by getting {
@@ -31,34 +37,36 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-                
-                implementation("io.insert-koin:koin-core:3.5.3")
-                implementation("io.insert-koin:koin-compose:1.1.2")
-                
-                implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
-                implementation("cafe.adriel.voyager:voyager-koin:1.0.0")
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
+
+                implementation(libs.koin.core)
+
+                implementation(libs.voyager.navigator)
+                implementation(libs.voyager.koin)
             }
         }
         
         val androidMain by getting {
             dependencies {
-                implementation("androidx.activity:activity-compose:1.8.2")
-                implementation("io.insert-koin:koin-android:3.5.3")
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.koin.android)
             }
         }
         
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
             }
         }
         
+        /*
         val iosMain by creating {
             dependsOn(commonMain)
         }
+        */
     }
 }
 

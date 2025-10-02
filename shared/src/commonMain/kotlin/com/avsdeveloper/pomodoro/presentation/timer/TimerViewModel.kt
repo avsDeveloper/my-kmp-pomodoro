@@ -20,7 +20,7 @@ class TimerViewModel(
     private val completeSessionUseCase: CompleteSessionUseCase,
     private val timerRepository: TimerRepository
 ) {
-    private val viewModelScope = CoroutineScope(Dispatchers.Main)
+    private val viewModelScope = CoroutineScope(Dispatchers.Default)
     private var tickJob: Job? = null
 
     private val _state = MutableStateFlow(
@@ -90,7 +90,7 @@ class TimerViewModel(
     private fun formatTime(seconds: Long): String {
         val minutes = seconds / 60
         val secs = seconds % 60
-        return "%02d:%02d".format(minutes, secs)
+        return "${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}"
     }
 
     fun onCleared() {

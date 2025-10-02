@@ -12,11 +12,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.avsdeveloper.pomodoro.domain.model.SessionType
 import com.avsdeveloper.pomodoro.domain.model.TimerState
-import org.koin.compose.koinInject
 
 @Composable
 fun TimerScreen(
-    viewModel: TimerViewModel = koinInject()
+    viewModel: TimerViewModel
 ) {
     val state by viewModel.state.collectAsState()
 

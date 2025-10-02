@@ -5,18 +5,22 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.avsdeveloper.pomodoro.di.appModule
 import com.avsdeveloper.pomodoro.presentation.timer.TimerScreen
+import com.avsdeveloper.pomodoro.presentation.timer.TimerViewModel
 import org.koin.core.context.startKoin
+import org.koin.java.KoinJavaComponent.inject
 
 fun main() = application {
     startKoin {
         modules(appModule)
     }
     
+    val timerViewModel: TimerViewModel by inject(TimerViewModel::class.java)
+
     Window(
         onCloseRequest = ::exitApplication,
         title = "Pomodoro Timer",
         state = rememberWindowState()
     ) {
-        TimerScreen()
+        TimerScreen(viewModel = timerViewModel)
     }
 }
