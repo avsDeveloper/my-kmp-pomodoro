@@ -11,22 +11,20 @@ kotlin {
     
     jvm("desktop")
 
-    // Java 17 toolchain for all JVM targets
-    jvmToolchain(17)
-
-    // Temporarily comment out iOS targets to resolve build issues
-    /*
     listOf(
         iosX64(),
         iosArm64(),
         iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
             baseName = "shared"
             isStatic = true
+            export(libs.koin.core)
         }
     }
-    */
+
+    // Java 17 toolchain for all JVM targets
+    jvmToolchain(17)
 
     sourceSets {
         val commonMain by getting {
@@ -41,10 +39,8 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
 
-                implementation(libs.koin.core)
-
-                implementation(libs.voyager.navigator)
-                implementation(libs.voyager.koin)
+                api(libs.koin.core)
+                implementation(libs.koin.compose)
             }
         }
         
@@ -62,11 +58,16 @@ kotlin {
             }
         }
         
-        /*
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+
         val iosMain by creating {
             dependsOn(commonMain)
+            iosX64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
         }
-        */
     }
 }
 

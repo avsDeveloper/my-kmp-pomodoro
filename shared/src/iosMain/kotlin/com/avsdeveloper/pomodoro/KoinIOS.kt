@@ -4,7 +4,12 @@ import com.avsdeveloper.pomodoro.di.appModule
 import org.koin.core.context.startKoin
 
 fun initKoin() {
-    startKoin {
-        modules(appModule)
+    try {
+        startKoin {
+            modules(appModule)
+        }
+    } catch (e: Exception) {
+        // Koin already started, ignore
     }
 }
+

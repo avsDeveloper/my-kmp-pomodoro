@@ -3,6 +3,6 @@ import shared
 
 class KoinInitializer {
     func initialize() {
-        KoinKt.doInitKoin()
+        KoinIOSKt.doInitKoin()
     }
 }
