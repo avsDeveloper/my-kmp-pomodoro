@@ -58,10 +58,22 @@ object PomodoroNotificationManager {
         )
 
         val formattedTime = formatTime(timer.timeLeftInSeconds)
+
+        // Remove tomato emoji, add colored dot based on session type and state
         val sessionTypeText = when (timer.sessionType) {
-            SessionType.WORK -> "🍅 Work Session"
+            SessionType.WORK -> "Work Session"
             SessionType.SHORT_BREAK -> "☕ Short Break"
             SessionType.LONG_BREAK -> "🌴 Long Break"
+        }
+
+        // Color dot indicator based on session type and state
+        val statusDot = when {
+            timer.timerState == TimerState.RUNNING && timer.sessionType == SessionType.WORK -> "🔴"
+            timer.timerState == TimerState.RUNNING && timer.sessionType == SessionType.SHORT_BREAK -> "🟠"
+            timer.timerState == TimerState.RUNNING && timer.sessionType == SessionType.LONG_BREAK -> "🟢"
+            timer.timerState == TimerState.PAUSED -> "🟡"
+            timer.timerState == TimerState.COMPLETED -> "⚪"
+            else -> "⚫"
         }
 
         val stateText = when (timer.timerState) {
@@ -75,7 +87,7 @@ object PomodoroNotificationManager {
 
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("$sessionTypeText - Session ${timer.sessionCount}")
-            .setContentText("$formattedTime - $stateText")
+            .setContentText("$statusDot $formattedTime - $stateText")
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
             .setContentIntent(pendingIntent)
             .setOngoing(timer.timerState == TimerState.RUNNING)
