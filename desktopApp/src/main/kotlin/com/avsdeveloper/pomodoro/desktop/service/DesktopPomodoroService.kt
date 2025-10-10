@@ -7,10 +7,13 @@ import com.avsdeveloper.pomodoro.platform.PomodoroService
 import java.awt.SystemTray
 import java.awt.TrayIcon
 import java.awt.Color
+import java.awt.Image
 import java.awt.RenderingHints
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.awt.image.BufferedImage
 
-class DesktopPomodoroService : PomodoroService {
+class DesktopPomodoroService(private val onTrayIconClick: () -> Unit) : PomodoroService {
     private var trayIcon: TrayIcon? = null
     private val systemTray = if (SystemTray.isSupported()) SystemTray.getSystemTray() else null
 
@@ -52,6 +55,15 @@ class DesktopPomodoroService : PomodoroService {
             val image = createTrayIcon(timer)
             trayIcon = TrayIcon(image, tooltip).apply {
                 isImageAutoSize = true
+
+                // Add click listener to bring window to front
+                addMouseListener(object : MouseAdapter() {
+                    override fun mouseClicked(e: MouseEvent) {
+                        if (e.button == MouseEvent.BUTTON1) { // Left click
+                            onTrayIconClick()
+                        }
+                    }
+                })
             }
             try {
                 systemTray.add(trayIcon)
@@ -67,23 +79,74 @@ class DesktopPomodoroService : PomodoroService {
     }
 
     private fun createTrayIcon(timer: PomodoroTimer): Image {
-        val size = 16
+        val size = 64  // Size for better text rendering
         val image = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
         val g2d = image.createGraphics()
 
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
 
-        // Set color based on session type and state
-        val color = when {
+        // Set color for tomato based on session type and state
+        val tomatoColor = when {
             timer.timerState == TimerState.RUNNING && timer.sessionType == SessionType.WORK -> Color.RED
             timer.timerState == TimerState.RUNNING && timer.sessionType == SessionType.SHORT_BREAK -> Color.ORANGE
             timer.timerState == TimerState.RUNNING && timer.sessionType == SessionType.LONG_BREAK -> Color.GREEN
-            timer.timerState == TimerState.PAUSED -> Color.YELLOW
+            timer.timerState == TimerState.PAUSED -> Color(255, 200, 0) // More saturated yellow
             else -> Color.GRAY
         }
 
-        g2d.color = color
-        g2d.fillOval(2, 2, size - 4, size - 4)
+        // Draw tomato shape - position it higher to create space for text
+        val tomatoSize = 38  // Slightly smaller to make room
+        val tomatoX = (size - tomatoSize) / 2
+        val tomatoY = 0  // Move to the very top
+
+        // Draw tomato body
+        g2d.color = tomatoColor
+        g2d.fillOval(tomatoX, tomatoY + 6, tomatoSize, tomatoSize - 6)
+
+        // Draw tomato stem (green top)
+        g2d.color = Color(34, 139, 34) // Forest green
+        val stemPoints = intArrayOf(
+            tomatoX + tomatoSize / 2 - 4, tomatoY + 6,
+            tomatoX + tomatoSize / 2 - 2, tomatoY,
+            tomatoX + tomatoSize / 2 + 2, tomatoY,
+            tomatoX + tomatoSize / 2 + 4, tomatoY + 6
+        )
+        g2d.fillPolygon(
+            intArrayOf(stemPoints[0], stemPoints[2], stemPoints[4], stemPoints[6]),
+            intArrayOf(stemPoints[1], stemPoints[3], stemPoints[5], stemPoints[7]),
+            4
+        )
+
+        // Add highlight to make it look more 3D
+        g2d.color = Color(255, 255, 255, 100)
+        g2d.fillOval(tomatoX + 7, tomatoY + 9, 11, 11)
+
+        // Draw timer text at the bottom with more space from tomato
+        val formattedTime = formatTime(timer.timeLeftInSeconds)
+        g2d.color = Color.BLACK
+        g2d.font = java.awt.Font("Monospaced", java.awt.Font.BOLD, 22)
+
+        val fontMetrics = g2d.fontMetrics
+        val textWidth = fontMetrics.stringWidth(formattedTime)
+
+        // Center the text horizontally and place it at the bottom with more spacing
+        val x = (size - textWidth) / 2
+        val y = size - 4  // Closer to the bottom edge
+
+        // Draw white outline for better visibility
+        g2d.color = Color.WHITE
+        for (dx in -1..1) {
+            for (dy in -1..1) {
+                if (dx != 0 || dy != 0) {
+                    g2d.drawString(formattedTime, x + dx, y + dy)
+                }
+            }
+        }
+
+        // Draw black text on top
+        g2d.color = Color.BLACK
+        g2d.drawString(formattedTime, x, y)
 
         g2d.dispose()
 

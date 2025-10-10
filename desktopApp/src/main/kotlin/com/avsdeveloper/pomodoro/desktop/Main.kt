@@ -11,11 +11,26 @@ import com.avsdeveloper.pomodoro.presentation.timer.TimerViewModel
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.inject
+import java.awt.Window as AwtWindow
 
 fun main() = application {
+    val windowState = rememberWindowState()
+
     startKoin {
         val desktopModule = module {
-            single<PomodoroService> { DesktopPomodoroService() }
+            single<PomodoroService> {
+                DesktopPomodoroService(
+                    onTrayIconClick = {
+                        // Bring the window to front when tray icon is clicked
+                        AwtWindow.getWindows().forEach { window ->
+                            if (window.isVisible) {
+                                window.toFront()
+                                window.requestFocus()
+                            }
+                        }
+                    }
+                )
+            }
         }
         modules(appModule, desktopModule)
     }
@@ -25,7 +40,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "Pomodoro Timer",
-        state = rememberWindowState()
+        state = windowState
     ) {
         TimerScreen(
             viewModel = timerViewModel,
