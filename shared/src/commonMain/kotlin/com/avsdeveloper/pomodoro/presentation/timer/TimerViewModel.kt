@@ -3,6 +3,7 @@ package com.avsdeveloper.pomodoro.presentation.timer
 import com.avsdeveloper.pomodoro.domain.model.TimerState
 import com.avsdeveloper.pomodoro.domain.repository.TimerRepository
 import com.avsdeveloper.pomodoro.domain.usecase.*
+import com.avsdeveloper.pomodoro.platform.PomodoroService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,7 +19,8 @@ class TimerViewModel(
     private val pauseTimerUseCase: PauseTimerUseCase,
     private val resetTimerUseCase: ResetTimerUseCase,
     private val completeSessionUseCase: CompleteSessionUseCase,
-    private val timerRepository: TimerRepository
+    private val timerRepository: TimerRepository,
+    private val pomodoroService: PomodoroService
 ) {
     private val viewModelScope = CoroutineScope(Dispatchers.Default)
     private var tickJob: Job? = null
@@ -48,10 +50,20 @@ class TimerViewModel(
                     formattedTime = formatTime(timer.timeLeftInSeconds)
                 )
 
-                if (timer.timerState == TimerState.RUNNING) {
-                    startTicking()
-                } else {
-                    stopTicking()
+                // Update or stop service based on timer state
+                when (timer.timerState) {
+                    TimerState.RUNNING -> {
+                        pomodoroService.startService(timer)
+                        startTicking()
+                    }
+                    TimerState.IDLE -> {
+                        pomodoroService.stopService()
+                        stopTicking()
+                    }
+                    TimerState.PAUSED, TimerState.COMPLETED -> {
+                        pomodoroService.updateService(timer)
+                        stopTicking()
+                    }
                 }
             }
         }
@@ -73,7 +85,7 @@ class TimerViewModel(
 
     private fun startTicking() {
         if (tickJob?.isActive == true) return
-        
+
         tickJob = viewModelScope.launch {
             while (true) {
                 delay(1000)
@@ -95,5 +107,8 @@ class TimerViewModel(
 
     fun onCleared() {
         stopTicking()
+        if (_state.value.timer.timerState == TimerState.IDLE) {
+            pomodoroService.stopService()
+        }
     }
 }

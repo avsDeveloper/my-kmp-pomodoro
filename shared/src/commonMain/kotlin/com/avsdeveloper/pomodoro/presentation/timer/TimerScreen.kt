@@ -1,6 +1,8 @@
 package com.avsdeveloper.pomodoro.presentation.timer
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -13,9 +15,11 @@ import androidx.compose.ui.unit.sp
 import com.avsdeveloper.pomodoro.domain.model.SessionType
 import com.avsdeveloper.pomodoro.domain.model.TimerState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimerScreen(
-    viewModel: TimerViewModel
+    viewModel: TimerViewModel,
+    onClose: (() -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -30,6 +34,20 @@ fun TimerScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Close button at the top
+            if (onClose != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
             Text(
                 text = "🍅 Pomodoro Timer",
                 style = MaterialTheme.typography.headlineLarge,
@@ -69,6 +87,8 @@ fun TimerScreen(
                 onReset = { viewModel.handleIntent(TimerIntent.ResetTimer) },
                 onNext = { viewModel.handleIntent(TimerIntent.StartNextSession) }
             )
+
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

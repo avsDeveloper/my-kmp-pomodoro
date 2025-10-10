@@ -24,7 +24,8 @@ val appModule = module {
             pauseTimerUseCase = get(),
             resetTimerUseCase = get(),
             completeSessionUseCase = get(),
-            timerRepository = get()
+            timerRepository = get(),
+            pomodoroService = get()
         )
     }
 }

@@ -4,15 +4,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.window.ComposeUIViewController
 import com.avsdeveloper.pomodoro.presentation.timer.TimerScreen
 import com.avsdeveloper.pomodoro.presentation.timer.TimerViewModel
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
+import platform.UIKit.UIViewController
 
-object IosKoinHelper : KoinComponent {
-    fun getTimerViewModel() = get<TimerViewModel>()
-}
-
-fun MainViewController(viewModel: TimerViewModel) = ComposeUIViewController {
-    MaterialTheme {
-        TimerScreen(viewModel = viewModel)
+fun MainViewController(viewModel: TimerViewModel): UIViewController {
+    return ComposeUIViewController {
+        TimerScreen(
+            viewModel = viewModel,
+            onClose = null // iOS apps don't typically have close buttons
+        )
     }
 }
